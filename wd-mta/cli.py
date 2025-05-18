@@ -4,7 +4,7 @@ import sys
 from optparse import OptionParser
 from pathlib import Path
 
-from .core import client
+from .core import discord_client
 
 
 parser = OptionParser(
@@ -91,10 +91,10 @@ def main() -> None:
         if opts.allow_all:
             parser.error("--allow-all cannot be specified with -o/--owner")
 
-        client.owner_ids = set(opts.owner)
+        discord_client.owner_ids = set(opts.owner)
 
     if opts.allow_all:
-        client.owner_ids = None
+        discord_client.owner_ids = None
 
     if not opts.token:
         opts.token = os.environ.get("WD_MTA_TOKEN")
@@ -106,8 +106,8 @@ def main() -> None:
             print()
             sys.exit(130)
 
-    client.sync_guild_id = opts.sync_commands
+    discord_client.sync_guild_id = opts.sync_commands
 
-    client.run(
+    discord_client.run(
         opts.token, reconnect=opts.reconnect, log_level=log_level, root_logger=True
     )
