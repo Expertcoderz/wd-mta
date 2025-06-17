@@ -386,7 +386,7 @@ class WhatsAppClient:
 
     async def get_pairing_code(self, phone: str, /) -> str:
         """Requests for a pairing code for the given phone number."""
-        async with self.session.get(
+        async with self.session.post(
             "session/pairphone",
             headers={"Token": self.token},
             json={"Phone": phone},
