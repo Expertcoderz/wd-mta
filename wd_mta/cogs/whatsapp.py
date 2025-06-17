@@ -303,8 +303,10 @@ class WhatsAppCog(commands.Cog):
     @discord.app_commands.describe(
         phone="Your phone number, including the country code but excluding non-numeric characters.",
     )
-    @commands.is_owner()
     async def _session_pair(self, interaction: discord.Interaction, phone: int):
+        if not self.bot.is_admin(interaction.user):
+            raise commands.NotOwner()
+
         await interaction.response.defer(ephemeral=True)
 
         code = self.whatsapp_client.get_pairing_code(str(phone))
@@ -317,8 +319,10 @@ class WhatsAppCog(commands.Cog):
     @_session_group.command(
         name="logout", description="Signs out of the WhatsApp session."
     )
-    @commands.is_owner()
     async def _session_logout(self, interaction: discord.Interaction):
+        if not self.bot.is_admin(interaction.user):
+            raise commands.NotOwner()
+
         await interaction.response.defer()
         await self.whatsapp_client.disconnect()
         await interaction.followup.send(
@@ -337,8 +341,10 @@ class WhatsAppCog(commands.Cog):
     @discord.app_commands.describe(
         phones="The phone number(s) of the user(s) to query. May be a comma-separated list."
     )
-    @commands.is_owner()
     async def _user_info(self, interaction: discord.Interaction, phones: str):
+        if not self.bot.is_admin(interaction.user):
+            raise commands.NotOwner()
+
         await interaction.response.defer()
 
         async for user in self.whatsapp_client.get_users(
@@ -364,8 +370,10 @@ class WhatsAppCog(commands.Cog):
         phone="The phone number of the target user,"
         "\n including the country code but excluding non-numeric characters."
     )
-    @commands.is_owner()
     async def _user_avatar(self, interaction: discord.Interaction, phone: str):
+        if not self.bot.is_admin(interaction.user):
+            raise commands.NotOwner()
+
         await interaction.response.defer()
 
         url = await self.whatsapp_client.get_user_avatar(f"{phone}@s.whatsapp.net")
@@ -380,13 +388,15 @@ class WhatsAppCog(commands.Cog):
         name_contains="Filter entries based on whether their names contain a certain string.",
         is_announce="Filter entries based on whether they are announcement groups.",
     )
-    @commands.is_owner()
     async def _group_list(
         self,
         interaction: discord.Interaction,
         name_contains: str | None,
         is_announce: bool | None,
     ):
+        if not self.bot.is_admin(interaction.user):
+            raise commands.NotOwner()
+
         await interaction.response.defer(ephemeral=True)
 
         if name_contains:
@@ -409,8 +419,10 @@ class WhatsAppCog(commands.Cog):
         name="info", description="Displays WhatsApp group information."
     )
     @discord.app_commands.describe(name="The name of the group chat. Case-insensitive.")
-    @commands.is_owner()
     async def _group_info(self, interaction: discord.Interaction, name: str):
+        if not self.bot.is_admin(interaction.user):
+            raise commands.NotOwner()
+
         await interaction.response.defer()
 
         group = await self.whatsapp_client.get_group_by_name(name)
@@ -451,7 +463,7 @@ class WhatsAppCog(commands.Cog):
     async def _binding_list(
         self, interaction: discord.Interaction, include_global: bool = False
     ):
-        if include_global and not self.bot.is_owner(interaction.user):
+        if include_global and not self.bot.is_admin(interaction.user):
             await interaction.response.send_message(
                 embed=ErrorEmbed(
                     description="For security, only owners can list bindings globally."
@@ -496,7 +508,6 @@ class WhatsAppCog(commands.Cog):
         channel="The corresponding Discord channel. If unspecified, one will be automatically created.",
         direction="The direction to which messages should be forwarded.",
     )
-    @commands.is_owner()
     async def _binding_set(
         self,
         interaction: discord.Interaction,
@@ -506,6 +517,9 @@ class WhatsAppCog(commands.Cog):
             "Discord to WhatsApp", "WhatsApp to Discord", "Bidirectional"
         ],
     ):
+        if not self.bot.is_admin(interaction.user):
+            raise commands.NotOwner()
+
         await interaction.response.defer()
 
         group_name = group_name.casefold()
@@ -557,13 +571,15 @@ class WhatsAppCog(commands.Cog):
         channel="The corresponding Discord channel.",
         preserve_channel="Whether to keep (i.e. avoid deleting) the channel. Defaults to `False`.",
     )
-    @commands.is_owner()
     async def _binding_remove(
         self,
         interaction: discord.Interaction,
         channel: discord.TextChannel,
         preserve_channel: bool = False,
     ):
+        if not self.bot.is_admin(interaction.user):
+            raise commands.NotOwner()
+
         await interaction.response.defer()
 
         if not self._config.bindings:
@@ -603,20 +619,14 @@ class WhatsAppCog(commands.Cog):
         preserve_channels="Whether to keep (i.e. avoid deleting) the channels. Defaults to `False`.",
         include_global="Include bindings from all servers, not just the current server.",
     )
-    @commands.is_owner()
     async def _binding_clear(
         self,
         interaction: discord.Interaction,
         preserve_channels: bool = False,
         include_global: bool = False,
     ):
-        if include_global and not self.bot.is_owner(interaction.user):
-            await interaction.response.send_message(
-                embed=ErrorEmbed(
-                    description="For security, only owners can clear bindings globally."
-                )
-            )
-            return
+        if not self.bot.is_admin(interaction.user):
+            raise commands.NotOwner()
 
         if not self._config.bindings:
             await interaction.response.send_message(
@@ -689,8 +699,10 @@ class WhatsAppCog(commands.Cog):
         self._save_config()
 
     @_binding_group.command(name="pause", description="Suspends all bindings globally.")
-    @commands.is_owner()
     async def _binding_pause(self, interaction: discord.Interaction):
+        if not self.bot.is_admin(interaction.user):
+            raise commands.NotOwner()
+
         if self._config.bindings_paused:
             await interaction.response.send_message(
                 embed=InfoEmbed(description="Bindings are already paused.")
@@ -708,8 +720,10 @@ class WhatsAppCog(commands.Cog):
         )
 
     @_binding_group.command(name="resume", description="Resumes all bindings globally.")
-    @commands.is_owner()
     async def _binding_resume(self, interaction: discord.Interaction):
+        if not self.bot.is_admin(interaction.user):
+            raise commands.NotOwner()
+
         if not self._config.bindings_paused:
             await interaction.response.send_message(
                 embed=InfoEmbed(description="Bindings have not already been paused.")

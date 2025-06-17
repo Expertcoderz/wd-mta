@@ -64,8 +64,10 @@ class CoreCog(commands.Cog):
     @discord.app_commands.command(
         name="shutdown", description="Shuts down the bot globally."
     )
-    @commands.is_owner()
     async def _shutdown(self, interaction: discord.Interaction):
+        if not self.bot.is_admin(interaction.user):
+            raise commands.NotOwner()
+
         logger.critical(
             "Shutdown requested by user %s from guild %s",
             interaction.user,

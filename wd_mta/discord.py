@@ -8,6 +8,7 @@ from collections.abc import Callable
 from typing import Coroutine, Self
 
 from discord import Color, Embed, Intents, Interaction, Object, app_commands, ui
+from discord.abc import User
 from discord.ext import commands
 from typeguard import typechecked
 
@@ -26,6 +27,7 @@ class WDMTABot(commands.Bot):
         *,
         setup: Callable[[Self], Coroutine],
         cleanup: Callable[[Self], Coroutine],
+        admin_ids: set[int] | None,
         sync_guild_id: int | None = None,
     ) -> None:
         intents = Intents.default()
@@ -38,6 +40,7 @@ class WDMTABot(commands.Bot):
         # May be overriden by the driver.
         self.setup = setup
         self.cleanup = cleanup
+        self.admin_ids = admin_ids
         self.sync_guild_id = sync_guild_id
 
     async def setup_hook(self) -> None:
@@ -58,9 +61,9 @@ class WDMTABot(commands.Bot):
             self.tree.copy_global_to(guild=guild)
             await self.tree.sync(guild=guild)
 
-        if isinstance(self.owner_ids, set):
+        if self.admin_ids is not None:
             logger.debug("Fetching bot owner ID")
-            self.owner_ids.add((await self.application_info()).owner.id)
+            self.admin_ids.add((await self.application_info()).owner.id)
 
     async def close(self) -> None:
         # This MUST come before `await super().close()`, because certain
@@ -73,11 +76,25 @@ class WDMTABot(commands.Bot):
         assert self.user
         logger.info("Logged in as %s (User ID: %d)", self.user, self.user.id)
 
+    def is_admin(self, user: User, /) -> bool:
+        if self.admin_ids is None:
+            return True
+
+        return user.id in self.admin_ids
+
     async def _on_command_error(
         self,
         interaction: Interaction,
         error: app_commands.AppCommandError,
     ) -> None:
+        if isinstance(error.__cause__, commands.NotOwner):
+            await interaction.response.send_message(
+                embed=ErrorEmbed(
+                    description="(╯°□°)╯︵ ┻━┻ You do not have permission to run this command!"
+                )
+            )
+            return
+
         logger.error("Command execution error: %s", error)
 
         await (

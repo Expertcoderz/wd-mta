@@ -63,16 +63,16 @@ discord_group.add_option(
     help="sync application commands to the guild GUILD_ID upon startup",
 )
 discord_group.add_option(
-    "-o",
-    "--owner",
+    "-a",
+    "--admin",
     type=int,
     action="append",
     metavar="USER_ID",
-    help="allow the user USER_ID to run owner commands, in addition to the actual owner"
-    " (can be given multiple times to specify multiple owners)",
+    help="allow the user USER_ID to run admin commands, in addition to the bot owner"
+    " (can be given multiple times to specify multiple admins)",
 )
 discord_group.add_option(
-    "--allow-all", action="store_true", help="allow all users to run owner commands"
+    "--allow-all", action="store_true", help="allow all users to run admin commands"
 )
 
 discord_group.add_option(
@@ -177,15 +177,15 @@ def main() -> int:
 
     log_level = parse_log_level(opts.log_level)
 
-    owner_ids: set[int] | None = None
+    admin_ids: set[int] | None = None
 
-    if opts.owner:
+    if opts.admin:
         if opts.allow_all:
-            parser.error("--allow-all cannot be specified with -o/--owner")
+            parser.error("--allow-all cannot be specified with -a/--admin")
 
-        owner_ids = set(opts.owner)
+        admin_ids = set(opts.admin)
     elif not opts.allow_all:
-        owner_ids = set()
+        admin_ids = set()
 
     try:
         discord_token = opts.discord_token or get_token(
@@ -233,9 +233,11 @@ def main() -> int:
             await cog.whatsapp_client.session.close()
 
     bot = WDMTABot(
-        setup=setup_bot, cleanup=cleanup_bot, sync_guild_id=opts.sync_to_guild
+        setup=setup_bot,
+        cleanup=cleanup_bot,
+        sync_guild_id=opts.sync_to_guild,
+        admin_ids=admin_ids,
     )
-    bot.owner_ids = owner_ids
 
     bot.run(
         discord_token,
