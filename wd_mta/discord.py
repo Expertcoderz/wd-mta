@@ -95,7 +95,7 @@ class WDMTABot(commands.Bot):
             )
             return
 
-        logger.error("Command execution error: %s", error)
+        logger.exception("Command execution error", exc_info=error)
 
         await (
             interaction.followup.send
